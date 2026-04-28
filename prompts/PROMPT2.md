@@ -9,10 +9,10 @@ Registar métricas e comparar UDP Fiável vs TCP.
    Em 2 terminais no Raspberry (ou 2 máquinas diferentes), corre o chat UDP fiável de reliable_udp_chat.py:
 
 Terminal A
-python3 reliable_udp_chat.py --local-port 9001 --remote-host IP_DO_B --remote-port 9002
+python3 reliable_udp_chat.py --local-port 9001 --remote-host 127.0.0.1 --remote-port 9002
 
 Terminal B
-python3 reliable_udp_chat.py --local-port 9002 --remote-host IP_DO_A --remote-port 9001
+python3 reliable_udp_chat.py --local-port 9002 --remote-host 127.0.0.1 --remote-port 9001
 
 Depois envia mensagens e confirma logs:
 
@@ -21,10 +21,10 @@ ACK Recebido X
 Retransmitindo Seq X (só deve aparecer quando há perda)
 Faz o mesmo com TCP em tcp_chat.py:
 Terminal A
-python3 tcp_chat.py --local-port 9101 --remote-host IP_DO_B --remote-port 9102
+python3 tcp_chat.py --local-port 9101 --remote-host 127.0.0.1 --remote-port 9102
 
 Terminal B
-python3 tcp_chat.py --local-port 9102 --remote-host IP_DO_A --remote-port 9101
+python3 tcp_chat.py --local-port 9102 --remote-host 127.0.0.1 --remote-port 9101
 
 2. Correr testes automáticos no Raspberry
    python3 -m pytest -q test_protocol.py
@@ -38,8 +38,10 @@ Se passar, o protocolo está ok em lógica de retransmissão/duplicados.
 Latência média por mensagem
 Mensagens por segundo
 Número de retransmissões (UDP)
-CPU (%) 4) Simular rede “má” para comparação real
-No Linux (Raspberry), podes usar netem. Exemplo no interface wlan0:
+CPU (%)
+
+4. Simular rede “má” para comparação real
+   No Linux (Raspberry), podes usar netem. Exemplo no interface wlan0:
 
 sudo tc qdisc add dev wlan0 root netem loss 5% delay 50ms 10ms
 
