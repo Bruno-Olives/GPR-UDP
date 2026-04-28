@@ -84,7 +84,7 @@ class ReliableUDPProtocol(asyncio.DatagramProtocol):
             return
 
         if pkt_type == PKT_ACK:
-            self._handle_ack(seq)
+            self._handle_ack(seq, addr)
             return
 
         if pkt_type == PKT_DATA:
@@ -93,7 +93,10 @@ class ReliableUDPProtocol(asyncio.DatagramProtocol):
 
         self._log(f"Tipo de pacote desconhecido: {pkt_type}")
 
-    def _handle_ack(self, seq: int) -> None:
+    def _handle_ack(self, seq: int, addr: Address) -> None:
+        # Fiabilidade: aprende o endpoint real do peer a partir do ACK recebido.
+        self.remote_addr = addr
+
         if self.pending_ack_seq is None:
             return
 
@@ -108,11 +111,12 @@ class ReliableUDPProtocol(asyncio.DatagramProtocol):
         if self.transport is None:
             return
         ack_packet = build_packet(PKT_ACK, seq, b"")
+        self._log(f"Enviando ACK {seq} para {addr[0]}:{addr[1]}")
         self.transport.sendto(ack_packet, addr)
 
     def _handle_data(self, seq: int, payload: bytes, addr: Address) -> None:
-        if self.remote_addr is None:
-            self.remote_addr = addr
+        # Fiabilidade: aprende o endpoint real do peer a partir de qualquer DATA válido.
+        self.remote_addr = addr
 
         # Fiabilidade: ACK enviado para cada pacote de dados recebido (inclui duplicados).
         self._send_ack(seq, addr)
