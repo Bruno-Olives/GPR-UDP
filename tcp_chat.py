@@ -12,6 +12,19 @@ async def read_stdin_line() -> Optional[str]:
     return line.rstrip("\n")
 
 
+async def send_file_messages(chat: "TCPPeerChat", file_path: str) -> None:
+    with open(file_path, "r", encoding="utf-8", errors="replace") as handle:
+        for line in handle:
+            text = line.strip()
+            if not text:
+                continue
+
+            if text.lower() in {"/quit", "/exit"}:
+                return
+
+            await chat.send_message(text)
+
+
 class TCPPeerChat:
     def __init__(self, remote_host: str, remote_port: int):
         self.remote_host = remote_host
@@ -75,6 +88,12 @@ async def main() -> None:
     parser.add_argument("--local-port", type=int, required=True)
     parser.add_argument("--remote-host", type=str, required=True)
     parser.add_argument("--remote-port", type=int, required=True)
+    parser.add_argument(
+        "--send-file",
+        type=str,
+        default=None,
+        help="Ficheiro com uma mensagem por linha (usa /quit para terminar).",
+    )
     args = parser.parse_args()
 
     chat = TCPPeerChat(args.remote_host, args.remote_port)
@@ -88,19 +107,22 @@ async def main() -> None:
     connect_task = asyncio.create_task(chat.connect_outgoing())
 
     try:
-        while True:
-            line = await read_stdin_line()
-            if line is None:
-                break
+        if args.send_file:
+            await send_file_messages(chat, args.send_file)
+        else:
+            while True:
+                line = await read_stdin_line()
+                if line is None:
+                    break
 
-            text = line.strip()
-            if not text:
-                continue
+                text = line.strip()
+                if not text:
+                    continue
 
-            if text.lower() in {"/quit", "/exit"}:
-                break
+                if text.lower() in {"/quit", "/exit"}:
+                    break
 
-            await chat.send_message(text)
+                await chat.send_message(text)
     finally:
         connect_task.cancel()
         try:
