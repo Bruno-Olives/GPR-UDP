@@ -53,6 +53,7 @@ class ReliableUDPProtocol(asyncio.DatagramProtocol):
         self.pending_ack_event: Optional[asyncio.Event] = None
         self.retransmit_task: Optional[asyncio.Task] = None
         self.send_lock = asyncio.Lock()
+        self.retransmit_count = 0
 
         # Stop-and-Wait state (receiver)
         self.expected_seq = 0
@@ -146,6 +147,7 @@ class ReliableUDPProtocol(asyncio.DatagramProtocol):
                 break
 
             # Fiabilidade: timeout expirou sem ACK, retransmite o mesmo pacote.
+            self.retransmit_count += 1
             self._log(f"Retransmitindo Seq {seq}")
             if self.transport is not None:
                 self.transport.sendto(packet, addr)
@@ -263,6 +265,7 @@ async def main() -> None:
 
                 await rudp.send_reliable(text)
     finally:
+        print(f"Total de retransmissoes: {rudp.retransmit_count}")
         transport.close()
 
 
